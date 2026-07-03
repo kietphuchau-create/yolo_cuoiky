@@ -32,6 +32,7 @@ def process_video_task(task_id, video_path, save_dir, telegram_enabled=False, em
         video_tasks[task_id]['total_frames'] = total_frames
         
         log_file = None
+        log_buffer = []
         if save_dir:
             os.makedirs(save_dir, exist_ok=True)
             log_file = os.path.join(save_dir, "thong_ke_so_luong.txt")
@@ -82,8 +83,11 @@ def process_video_task(task_id, video_path, save_dir, telegram_enabled=False, em
                 seconds = frame_idx / fps
                 time_str = time.strftime('%H:%M:%S', time.gmtime(seconds))
                 if log_file:
-                    with open(log_file, "a", encoding="utf-8") as f:
-                        f.write(f"[{time_str} - {seconds:.2f}s] Frame {frame_idx}: {current_counts}\n")
+                    log_buffer.append(f"[{time_str} - {seconds:.2f}s] Frame {frame_idx}: {current_counts}\n")
+                    if len(log_buffer) >= 100:
+                        with open(log_file, "a", encoding="utf-8") as f:
+                            f.writelines(log_buffer)
+                        log_buffer.clear()
                     
                     # Lưu ảnh cho các class được phát hiện
                     for cls_name in current_counts:
@@ -110,6 +114,12 @@ def process_video_task(task_id, video_path, save_dir, telegram_enabled=False, em
                 break
             
         cap.release()
+        
+        # Ghi các log còn dư trong buffer
+        if log_file and log_buffer:
+            with open(log_file, "a", encoding="utf-8") as f:
+                f.writelines(log_buffer)
+            log_buffer.clear()
         
         if video_tasks[task_id].get('status') != 'stopped':
             video_tasks[task_id]['status'] = 'completed'

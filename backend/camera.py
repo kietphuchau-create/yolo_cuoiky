@@ -29,6 +29,7 @@ class CameraStream:
         self.connect_error = False  # True khi camera không mở được
         
         self.log_file = None
+        self.log_buffer = []
         self.start_time = time.time()
         
         if self.save_dir:
@@ -98,8 +99,14 @@ class CameraStream:
                     elapsed = time.time() - self.start_time
                     time_str = time.strftime('%H:%M:%S', time.gmtime(elapsed))
                     log_line = f"[{time_str} - {elapsed:.2f}s] Số lượng hiện có: {current_counts}\n"
-                    with open(self.log_file, "a", encoding="utf-8") as f:
-                        f.write(log_line)
+                    self.log_buffer.append(log_line)
+                    if len(self.log_buffer) >= 30:
+                        try:
+                            with open(self.log_file, "a", encoding="utf-8") as f:
+                                f.writelines(self.log_buffer)
+                            self.log_buffer.clear()
+                        except Exception as e:
+                            logger.error(f"Lỗi ghi log camera: {e}")
 
                 # Gửi cảnh báo Telegram (có cooldown tự động)
                 if current_counts:
@@ -139,6 +146,15 @@ class CameraStream:
         self.started = False
         if self.thread:
             self.thread.join(timeout=1.0)
+            
+        # Ghi các log còn dư trong buffer
+        if self.log_file and self.log_buffer:
+            try:
+                with open(self.log_file, "a", encoding="utf-8") as f:
+                    f.writelines(self.log_buffer)
+                self.log_buffer.clear()
+            except Exception as e:
+                logger.error(f"Lỗi ghi log camera cuối: {e}")
 
 
 # ============================================================
