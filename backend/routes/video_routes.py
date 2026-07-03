@@ -21,7 +21,7 @@ video_bp = Blueprint('video', __name__)
 # Helper functions (không phải route)
 # ============================================================
 
-def process_video_task(task_id, video_path, save_dir, telegram_enabled=False, email_enabled=False):
+def process_video_task(task_id, video_path, save_dir, email_enabled=False):
     try:
         video_tasks[task_id]['status'] = 'processing'
         cap = cv2.VideoCapture(video_path)
@@ -129,13 +129,7 @@ def process_video_task(task_id, video_path, save_dir, telegram_enabled=False, em
             else:
                 video_tasks[task_id]['message'] = "Đã xử lý xong video."
 
-            # Gửi thông báo Telegram khi quét video xong (nếu được kích hoạt)
-            if telegram_enabled and counts:
-                try:
-                    from telegram_notifier import send_telegram_alert
-                    send_telegram_alert(annotated_frame, counts, source="Quét video (hoàn thành)", force_send=True)
-                except Exception:
-                    pass
+
 
             # Gửi email cảnh báo khi quét video xong (nếu được kích hoạt)
             if email_enabled and counts:
@@ -201,7 +195,6 @@ def upload_video():
     
     file = request.files['video']
     local_save_enabled = request.form.get('local_save_enabled', 'false') == 'true'
-    telegram_enabled = request.form.get('telegram_enabled', 'false') == 'true'
     email_enabled = request.form.get('email_enabled', 'false') == 'true'
     save_dir = request.form.get('save_dir', '').strip()
     
@@ -246,7 +239,7 @@ def upload_video():
     }
     
     # Start background thread
-    thread = threading.Thread(target=process_video_task, args=(task_id, video_path, save_dir, telegram_enabled, email_enabled))
+    thread = threading.Thread(target=process_video_task, args=(task_id, video_path, save_dir, email_enabled))
     thread.daemon = True
     thread.start()
     
@@ -261,7 +254,6 @@ def scan_existing_video():
         
     filename = secure_filename(data['filename'])
     local_save_enabled = data.get('local_save_enabled', False)
-    telegram_enabled = data.get('telegram_enabled', False)
     email_enabled = data.get('email_enabled', False)
     save_dir = data.get('save_dir', '').strip()
     
@@ -302,7 +294,7 @@ def scan_existing_video():
     }
     
     # Start background thread
-    thread = threading.Thread(target=process_video_task, args=(task_id, video_path, save_dir, telegram_enabled, email_enabled))
+    thread = threading.Thread(target=process_video_task, args=(task_id, video_path, save_dir, email_enabled))
     thread.daemon = True
     thread.start()
     

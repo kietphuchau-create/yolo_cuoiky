@@ -15,7 +15,6 @@ from routes.camera_routes import camera_bp
 from routes.video_routes import video_bp
 from routes.image_routes import image_bp
 from routes.manage_routes import manage_bp
-from routes.telegram_routes import telegram_bp
 from routes.email_routes import email_bp
 
 # ============================================================
@@ -35,7 +34,6 @@ app.register_blueprint(camera_bp)     # /video_feed, /api/live_status, /update_c
 app.register_blueprint(video_bp)      # /api/upload_video, /api/scan_existing_video, ...
 app.register_blueprint(image_bp)      # /api/scan_image
 app.register_blueprint(manage_bp)     # /api/videos, /uploads/<filename>
-app.register_blueprint(telegram_bp)   # /api/telegram/config, /api/telegram/test
 app.register_blueprint(email_bp)      # /api/email/config, /api/email/test
 
 logger.info("Đã đăng ký tất cả Blueprints thành công!")

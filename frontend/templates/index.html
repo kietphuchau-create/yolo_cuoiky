@@ -77,10 +77,6 @@
                             </div>
 
                             <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-main);">
-                                <input type="checkbox" id="live-telegram-toggle" style="accent-color: var(--primary);"> Gửi kết quả về Telegram
-                            </label>
-
-                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-main);">
                                 <input type="checkbox" id="live-email-toggle" style="accent-color: var(--primary);"> Gửi kết quả về Gmail
                             </label>
                         </div>
@@ -117,45 +113,6 @@
                                 <span class="stat-value">50%</span>
                             </li>
                         </ul>
-                    </div>
-
-                    <!-- Telegram Config Panel -->
-                    <div class="control-group" style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 18px;">
-                        <h3 style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                            <span style="font-size: 1.2em;">🔔</span> Cảnh báo Telegram
-                        </h3>
-
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-main); margin-bottom: 12px;">
-                            <input type="checkbox" id="tg-enabled" style="accent-color: var(--primary); width: 16px; height: 16px;">
-                            <span>Bật cảnh báo tự động</span>
-                        </label>
-
-                        <div id="tg-config-fields">
-                            <label for="tg-token" style="font-size: 0.85em; color: var(--text-muted);">Bot Token</label>
-                            <div class="input-wrapper" style="margin-bottom: 10px;">
-                                <input type="password" id="tg-token" placeholder="Nhập Bot Token từ @BotFather" style="font-size: 0.85em;">
-                            </div>
-
-                            <label for="tg-chat-id" style="font-size: 0.85em; color: var(--text-muted);">Chat ID</label>
-                            <div class="input-wrapper" style="margin-bottom: 10px;">
-                                <input type="text" id="tg-chat-id" placeholder="Ví dụ: 6090629286" style="font-size: 0.85em;">
-                            </div>
-
-                            <label for="tg-cooldown" style="font-size: 0.85em; color: var(--text-muted);">Cooldown (giây giữa các lần gửi)</label>
-                            <div class="input-wrapper" style="margin-bottom: 10px;">
-                                <input type="number" id="tg-cooldown" value="30" min="5" max="300" style="font-size: 0.85em;">
-                            </div>
-
-                            <div style="display: flex; gap: 8px; margin-top: 8px;">
-                                <button id="btn-tg-save" class="btn-primary" style="flex: 1; font-size: 0.85em; padding: 8px;">
-                                    💾 Lưu cấu hình
-                                </button>
-                                <button id="btn-tg-test" class="btn-primary" style="flex: 1; font-size: 0.85em; padding: 8px; background: rgba(34,197,94,0.3); border: 1px solid rgba(34,197,94,0.4);">
-                                    🔔 Test
-                                </button>
-                            </div>
-                            <p id="tg-status-msg" style="font-size: 0.8em; margin-top: 8px; color: var(--text-muted); min-height: 1.2em;"></p>
-                        </div>
                     </div>
 
                     <!-- Gmail Config Panel -->
@@ -267,10 +224,6 @@
                                     <input type="text" id="save-dir" placeholder="Ví dụ: D:\KetQua" style="font-size: 0.85em;">
                                 </div>
                             </div>
-
-                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-main);">
-                                <input type="checkbox" id="video-telegram-toggle" style="accent-color: var(--primary);"> Gửi kết quả về Telegram
-                            </label>
 
                             <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-main);">
                                 <input type="checkbox" id="video-email-toggle" style="accent-color: var(--primary);"> Gửi kết quả về Gmail

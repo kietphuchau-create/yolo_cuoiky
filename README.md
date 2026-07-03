@@ -16,8 +16,6 @@ Demo_YOLOV11/
 │   ├── camera.py                   # Class CameraStream — quản lý camera stream, xử lý
 │   │                               #   capture frame, chạy YOLO inference trên background thread,
 │   │                               #   generate MJPEG frames. Chứa trạng thái camera.
-│   ├── telegram_notifier.py        # Module gửi cảnh báo phát hiện vật thể qua Telegram Bot
-│   │                               #   API (hỗ trợ gửi ảnh kèm bounding boxes và cooldown chống spam).
 │   ├── email_notifier.py           # Module gửi cảnh báo phát hiện vật thể qua Gmail sử dụng
 │   │                               #   SMTP_SSL (gửi thư kèm ảnh và bảng thống kê kết quả).
 │   ├── routes/                     # Thư mục chứa các Blueprint routes
@@ -29,7 +27,6 @@ Demo_YOLOV11/
 │   │   │                           #   /api/stop_scan/<task_id>, /scan_video_feed/<task_id>,
 │   │   │                           #   /api/status/<task_id>, /api/check_dir
 │   │   ├── image_routes.py         # 1 route: /api/scan_image (nhận diện trên ảnh)
-│   │   ├── telegram_routes.py      # 3 routes: quản lý cấu hình và test kết nối Telegram bot
 │   │   ├── email_routes.py         # 3 routes: quản lý cấu hình và test kết nối Gmail qua SMTP
 │   │   └── manage_routes.py        # 3 routes: /api/videos, /api/videos/<filename>,
 │   │                               #   /uploads/<filename> (quản lý video đã upload)
@@ -134,7 +131,6 @@ graph TD
     A --> VR["routes/video_routes.py"]
     A --> IR["routes/image_routes.py"]
     A --> MGR["routes/manage_routes.py"]
-    A --> TR["routes/telegram_routes.py"]
     A --> ER["routes/email_routes.py"]
 
     CAM --> C
@@ -143,15 +139,8 @@ graph TD
     VR --> C
     IR --> C
     MGR --> C
-    TR --> C
     ER --> C
     
-    %% Telegram Alerts dependencies
-    CAM -.-> TN["telegram_notifier.py"]
-    VR -.-> TN
-    TR --> TN
-    TN --> C
-
     %% Email Alerts dependencies
     CAM -.-> EN["email_notifier.py"]
     VR -.-> EN
@@ -167,7 +156,7 @@ graph TD
 |---------|----------|
 | `app.py` → `config.py` | Import logger, cấu hình chung |
 | `app.py` → `camera.py` | Import để đăng ký atexit handler (giải phóng camera khi tắt) |
-| `app.py` → 7 file `routes/*` | Import 7 Blueprint để đăng ký vào Flask app |
+| `app.py` → 6 file `routes/*` | Import 6 Blueprint để đăng ký vào Flask app |
 
 **Tầng 2 — Các file routes và modules logic (giữa):**
 
@@ -178,14 +167,11 @@ graph TD
 | `video_routes.py` → `config.py` | Dùng model, model_lock, video_tasks, UPLOAD_FOLDER... |
 | `image_routes.py` → `config.py` | Dùng model, model_lock, CONF_THRESHOLD, logger |
 | `manage_routes.py` → `config.py` | Dùng UPLOAD_FOLDER |
-| `telegram_routes.py` → `config.py` | Dùng logger |
-| `telegram_routes.py` → `telegram_notifier.py` | Lưu cấu hình của Telegram Bot, thực hiện test gửi thử |
-| `telegram_notifier.py` → `config.py` | Sử dụng logger |
 | `email_routes.py` → `config.py` | Dùng logger |
 | `email_routes.py` → `email_notifier.py` | Lưu cấu hình Gmail, thực hiện test gửi thử |
 | `email_notifier.py` → `config.py` | Sử dụng logger |
-| `camera.py` → `telegram_notifier.py` & `email_notifier.py` | Tự động gọi gửi ảnh cảnh báo khi camera phát hiện vật thể |
-| `video_routes.py` → `telegram_notifier.py` & `email_notifier.py` | Tự động gọi gửi ảnh thống kê khi quét video hoàn thành |
+| `camera.py` → `email_notifier.py` | Tự động gọi gửi ảnh cảnh báo khi camera phát hiện vật thể |
+| `video_routes.py` → `email_notifier.py` | Tự động gọi gửi ảnh thống kê khi quét video hoàn thành |
 | `main_routes.py` | Không phụ thuộc file nào trong dự án (chỉ dùng Flask) |
 
 **Tầng 3 — `config.py` (nền tảng, dưới cùng):**
@@ -232,21 +218,6 @@ Sau đó mở trình duyệt tại: http://localhost:5000
 - Framework: YOLOv11 (Ultralytics)
 - Confidence threshold: 0.5
 
-## Tính Năng Cảnh Báo Telegram (Telegram Alerts)
-
-Hệ thống hỗ trợ gửi thông báo kèm ảnh chụp nhận diện (chứa bounding box) và bảng thống kê số lượng vật thể trực tiếp đến tài khoản Telegram của bạn khi phát hiện vật thể.
-
-### Hướng dẫn thiết lập Telegram Bot:
-1. Mở Telegram, tìm kiếm **@BotFather** và gửi lệnh `/newbot` để tạo bot mới. Copy chuỗi **Bot Token** được cấp.
-2. Tìm kiếm **@userinfobot** (hoặc bot lấy ID tương tự), nhấn `/start` để lấy số **Chat ID** của tài khoản bạn.
-3. Chạy ứng dụng web, tại tab **Camera Trực Tiếp**:
-   - Nhập **Bot Token** và **Chat ID** vào panel **Cảnh báo Telegram** ở sidebar.
-   - Nhấn **Lưu cấu hình**.
-   - Nhấn nút **Test** để gửi tin nhắn thử nghiệm nhằm xác nhận kết nối hoạt động thành công.
-
-### Cơ chế hoạt động:
-- **Tùy chọn đa chế độ:** Bạn có thể tích chọn lưu ảnh cục bộ trên máy, gửi cảnh báo Telegram, hoặc **chọn cả hai cùng lúc** thông qua hai checkbox độc lập trên giao diện.
-- **Tính năng Cooldown (Chống Spam):** Khoảng cách thời gian tối thiểu giữa các lần gửi cảnh báo (mặc định là `30` giây, có thể tùy chỉnh trên giao diện) để tránh việc bot gửi tin nhắn liên tục khi vật thể đứng im trước camera.
 
 ## Tính Năng Cảnh Báo Email (Email Alerts)
 

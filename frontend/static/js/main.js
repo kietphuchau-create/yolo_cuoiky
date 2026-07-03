@@ -101,11 +101,10 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.addEventListener('click', function() {
                 const filename = this.getAttribute('data-filename');
                 const localSaveEnabled = videoSaveToggle ? videoSaveToggle.checked : false;
-                const telegramEnabled = videoTelegramToggle ? videoTelegramToggle.checked : false;
                 const emailEnabled = videoEmailToggle ? videoEmailToggle.checked : false;
                 
-                if (!localSaveEnabled && !telegramEnabled && !emailEnabled) {
-                    alert("Vui lòng bật ít nhất một chế độ lưu kết quả (Lưu cục bộ, Telegram hoặc Gmail) ở Tab Quét Video File!");
+                if (!localSaveEnabled && !emailEnabled) {
+                    alert("Vui lòng bật ít nhất một chế độ lưu kết quả (Lưu cục bộ hoặc Gmail) ở Tab Quét Video File!");
                     return;
                 }
                 
@@ -168,7 +167,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('.tab-btn[data-target="offline-tab"]').click();
         
         const localSaveEnabled = videoSaveToggle ? videoSaveToggle.checked : false;
-        const telegramEnabled = videoTelegramToggle ? videoTelegramToggle.checked : false;
         const emailEnabled = videoEmailToggle ? videoEmailToggle.checked : false;
         
         btnScanVideo.disabled = true;
@@ -186,7 +184,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 filename: filename, 
                 save_dir: saveDirValue,
                 local_save_enabled: localSaveEnabled,
-                telegram_enabled: telegramEnabled,
                 email_enabled: emailEnabled
             })
         })
@@ -564,7 +561,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const statsList = document.getElementById('scan-stats-list');
     const videoSaveToggle = document.getElementById('video-save-toggle');
     const videoSaveOptions = document.getElementById('video-save-options');
-    const videoTelegramToggle = document.getElementById('video-telegram-toggle');
     const videoEmailToggle = document.getElementById('video-email-toggle');
     
     let pollingInterval = null;
@@ -583,7 +579,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         const localSaveEnabled = videoSaveToggle ? videoSaveToggle.checked : false;
-        const telegramEnabled = videoTelegramToggle ? videoTelegramToggle.checked : false;
         const emailEnabled = videoEmailToggle ? videoEmailToggle.checked : false;
         const saveDirValue = saveDir.value.trim();
         
@@ -592,8 +587,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (!localSaveEnabled && !telegramEnabled && !emailEnabled) {
-            alert("Vui lòng chọn ít nhất một chế độ lưu kết quả (Lưu cục bộ, Telegram hoặc Gmail)!");
+        if (!localSaveEnabled && !emailEnabled) {
+            alert("Vui lòng chọn ít nhất một chế độ lưu kết quả (Lưu cục bộ hoặc Gmail)!");
             return;
         }
         
@@ -601,7 +596,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = new FormData();
         formData.append('video', file);
         formData.append('local_save_enabled', localSaveEnabled);
-        formData.append('telegram_enabled', telegramEnabled);
+
         formData.append('email_enabled', emailEnabled);
         formData.append('save_dir', localSaveEnabled ? saveDirValue : '');
         
@@ -886,165 +881,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ============================================================
-    // 6. Telegram Config
-    // ============================================================
-    const tgEnabled = document.getElementById('tg-enabled');
-    const tgToken = document.getElementById('tg-token');
-    const tgChatId = document.getElementById('tg-chat-id');
-    const tgCooldown = document.getElementById('tg-cooldown');
-    const btnTgSave = document.getElementById('btn-tg-save');
-    const btnTgTest = document.getElementById('btn-tg-test');
-    const tgStatusMsg = document.getElementById('tg-status-msg');
 
-    function showTgStatus(msg, color = 'var(--text-muted)') {
-        if (tgStatusMsg) {
-            tgStatusMsg.innerText = msg;
-            tgStatusMsg.style.color = color;
-            // Tự xóa sau 5 giây
-            setTimeout(() => {
-                if (tgStatusMsg.innerText === msg) {
-                    tgStatusMsg.innerText = '';
-                }
-            }, 5000);
-        }
-    }
-
-    const liveTelegramToggle = document.getElementById('live-telegram-toggle');
-
-    // Load cấu hình Telegram khi trang mở
-    function loadTelegramConfig() {
-        fetch('/api/telegram/config')
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === 'success' && data.config) {
-                    const cfg = data.config;
-                    if (tgEnabled) tgEnabled.checked = cfg.enabled || false;
-                    if (liveTelegramToggle) liveTelegramToggle.checked = cfg.enabled || false;
-                    if (tgChatId) tgChatId.value = cfg.chat_id || '';
-                    if (tgCooldown) tgCooldown.value = cfg.cooldown || 30;
-                    // Token không hiện (đã mask phía server)
-                }
-            })
-            .catch(err => console.error('Lỗi load Telegram config:', err));
-    }
-
-    loadTelegramConfig();
-
-    // Đồng bộ thay đổi từ checkbox Live Telegram
-    if (liveTelegramToggle) {
-        liveTelegramToggle.addEventListener('change', (e) => {
-            const isChecked = e.target.checked;
-            if (tgEnabled) tgEnabled.checked = isChecked;
-            
-            // Gọi API lưu trạng thái bật/tắt
-            fetch('/api/telegram/config', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ enabled: isChecked })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.status !== 'success') {
-                    showTgStatus('❌ Không thể lưu trạng thái Telegram', 'var(--danger)');
-                }
-            })
-            .catch(err => console.error('Lỗi cập nhật trạng thái Telegram:', err));
-        });
-    }
-
-    // Đồng bộ thay đổi từ checkbox Telegram Config Panel
-    if (tgEnabled) {
-        tgEnabled.addEventListener('change', (e) => {
-            const isChecked = e.target.checked;
-            if (liveTelegramToggle) liveTelegramToggle.checked = isChecked;
-            
-            fetch('/api/telegram/config', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ enabled: isChecked })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.status !== 'success') {
-                    showTgStatus('❌ Không thể lưu trạng thái Telegram', 'var(--danger)');
-                }
-            })
-            .catch(err => console.error('Lỗi cập nhật trạng thái Telegram:', err));
-        });
-    }
-
-    // Lưu cấu hình
-    if (btnTgSave) {
-        btnTgSave.addEventListener('click', () => {
-            const payload = {
-                enabled: tgEnabled ? tgEnabled.checked : false,
-                chat_id: tgChatId ? tgChatId.value.trim() : '',
-                cooldown: tgCooldown ? parseInt(tgCooldown.value) || 30 : 30,
-            };
-
-            // Chỉ gửi token nếu user nhập mới (field không rỗng)
-            if (tgToken && tgToken.value.trim()) {
-                payload.bot_token = tgToken.value.trim();
-            }
-
-            btnTgSave.disabled = true;
-            btnTgSave.innerHTML = '⏳ Đang lưu...';
-
-            fetch('/api/telegram/config', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            })
-            .then(res => res.json())
-            .then(data => {
-                btnTgSave.disabled = false;
-                btnTgSave.innerHTML = '💾 Lưu cấu hình';
-
-                if (data.status === 'success') {
-                    showTgStatus('✅ Đã lưu cấu hình!', 'var(--success)');
-                    // Xóa token input sau khi lưu (bảo mật)
-                    if (tgToken) tgToken.value = '';
-                } else {
-                    showTgStatus('❌ ' + data.message, 'var(--danger)');
-                }
-            })
-            .catch(err => {
-                btnTgSave.disabled = false;
-                btnTgSave.innerHTML = '💾 Lưu cấu hình';
-                showTgStatus('❌ Lỗi kết nối server', 'var(--danger)');
-            });
-        });
-    }
-
-    // Test kết nối
-    if (btnTgTest) {
-        btnTgTest.addEventListener('click', () => {
-            btnTgTest.disabled = true;
-            btnTgTest.innerHTML = '⏳ Đang gửi...';
-
-            fetch('/api/telegram/test', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-            })
-            .then(res => res.json())
-            .then(data => {
-                btnTgTest.disabled = false;
-                btnTgTest.innerHTML = '🔔 Test';
-
-                if (data.status === 'success') {
-                    showTgStatus('✅ ' + data.message, 'var(--success)');
-                } else {
-                    showTgStatus('❌ ' + data.message, 'var(--danger)');
-                }
-            })
-            .catch(err => {
-                btnTgTest.disabled = false;
-                btnTgTest.innerHTML = '🔔 Test';
-                showTgStatus('❌ Lỗi kết nối server', 'var(--danger)');
-            });
-        });
-    }
 
     // ============================================================
     // 7. Gmail Config

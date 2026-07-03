@@ -108,14 +108,8 @@ class CameraStream:
                         except Exception as e:
                             logger.error(f"Lỗi ghi log camera: {e}")
 
-                # Gửi cảnh báo Telegram (có cooldown tự động)
+                # Gửi cảnh báo (có cooldown tự động)
                 if current_counts:
-                    try:
-                        from telegram_notifier import send_telegram_alert
-                        send_telegram_alert(annotated, current_counts, source="Camera trực tiếp")
-                    except Exception:
-                        pass  # Không để lỗi Telegram ảnh hưởng camera
-
                     try:
                         from email_notifier import send_email_alert
                         send_email_alert(annotated, current_counts, source="Camera trực tiếp")
