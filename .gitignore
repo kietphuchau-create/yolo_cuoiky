@@ -1,0 +1,28 @@
+# Byte-compiled / optimized / DLL files
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Editor/IDE configurations
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# User uploads / outputs (ignore all files in uploads, keep folder structure)
+backend/uploads/*
+!backend/uploads/.gitkeep

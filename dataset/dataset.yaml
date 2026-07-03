@@ -1,0 +1,18 @@
+names:
+- Nasal spray
+- Pencil
+- USB
+- air conditioner remote
+- blue mechanical pencil
+- blue pen
+- card holder
+- pen case
+- pink head red pen
+- pink white retractable pen
+- red pen
+- white body blue pen
+nc: 12
+path: C:\Users\Cpeach\OneDrive\Desktop\Demo_YOLOV11\dataset
+test: test/images
+train: train/images
+val: val/images

@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YOLOv11 Dashboard | Object Detection</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script> <!-- Icons -->
+</head>
+<body>
+
+    <!-- Background Effects -->
+    <div class="blob-bg blob-1"></div>
+    <div class="blob-bg blob-2"></div>
+    <div class="grid-overlay"></div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="glass-panel main-header">
+            <div class="header-content">
+                <div class="logo">
+                    <span class="gradient-text">YOLO</span> Vision
+                </div>
+                <div class="system-status">
+                    <div class="status-indicator">
+                        <div class="pulse-dot"></div>
+                        <span>Hệ thống đang hoạt động</span>
+                    </div>
+                    <div class="clock" id="live-clock">00:00:00</div>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-layout">
+            <div class="tabs-nav">
+                <button class="tab-btn active" data-target="live-tab"><i class="fas fa-camera"></i> Camera Trực Tiếp</button>
+                <button class="tab-btn" data-target="offline-tab"><i class="fas fa-video"></i> Quét Video File</button>
+                <button class="tab-btn" data-target="image-tab"><i class="fas fa-image"></i> Quét Hình Ảnh</button>
+                <button class="tab-btn" data-target="manage-tab"><i class="fas fa-folder-open"></i> Quản lý Video</button>
+            </div>
+
+            <!-- Tab 1: Live Camera -->
+            <div id="live-tab" class="tab-content active three-columns">
+                <aside class="glass-panel sidebar">
+                    <h2 class="sidebar-title">Bảng điều khiển</h2>
+                    
+                    <div class="control-group">
+                        <label style="margin-bottom: 8px; display: block;">Chế độ kết nối</label>
+                        <div class="segment-selector">
+                            <button type="button" class="segment-btn active" id="btn-mode-webcam" data-mode="webcam">
+                                Webcam (Index)
+                            </button>
+                            <button type="button" class="segment-btn" id="btn-mode-ipcam" data-mode="ipcam">
+                                IP Camera (URL)
+                            </button>
+                        </div>
+
+                        <label for="camera-ip" id="label-camera-source">Nguồn Camera (Index)</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="camera-ip" value="0" placeholder="Ví dụ: 0, 1 hoặc 2">
+                        </div>
+                        
+                        <div style="margin-top: 15px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-main);">
+                                <input type="checkbox" id="live-save-toggle" style="accent-color: var(--primary);"> Lưu kết quả cục bộ (trên máy)
+                            </label>
+                            
+                            <div id="live-save-options" style="display: none; margin-top: 2px; padding-left: 24px;">
+                                <label for="live-save-dir" style="font-size: 0.8em; color: var(--text-muted); display: block; margin-bottom: 4px;">Thư mục lưu ảnh (Local)</label>
+                                <div class="input-wrapper">
+                                    <input type="text" id="live-save-dir" placeholder="Ví dụ: D:\KetQuaLive" style="font-size: 0.85em;">
+                                </div>
+                            </div>
+
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-main);">
+                                <input type="checkbox" id="live-telegram-toggle" style="accent-color: var(--primary);"> Gửi kết quả về Telegram
+                            </label>
+
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-main);">
+                                <input type="checkbox" id="live-email-toggle" style="accent-color: var(--primary);"> Gửi kết quả về Gmail
+                            </label>
+                        </div>
+
+                        <button id="btn-update-cam" class="btn-primary">
+                            Mở / Cập nhật Camera
+                        </button>
+                        <button id="btn-toggle-scan" class="btn-primary" style="background-color: var(--secondary, #8b5cf6); margin-top: 10px; display: none;">
+                            <i class="fas fa-play"></i> Bắt đầu quét
+                        </button>
+                        <button id="btn-stop-cam" class="btn-primary" style="background-color: var(--danger, #e74c3c); margin-top: 10px; display: none;">
+                            <i class="fas fa-stop"></i> Dừng Camera
+                        </button>
+                        <p class="hint-text">* Sử dụng số '0' để dùng Webcam mặc định của máy tính.</p>
+                    </div>
+
+                    <div class="info-group mt-4">
+                        <h3>Thông số Mô hình</h3>
+                        <ul class="stats-list">
+                            <li>
+                                <span class="stat-label">Phiên bản</span>
+                                <span class="stat-value highlight">YOLOv11</span>
+                            </li>
+                            <li>
+                                <span class="stat-label">Mô hình hiện tại</span>
+                                <span class="stat-value highlight">Day Du (12 lớp)</span>
+                            </li>
+                            <li>
+                                <span class="stat-label">Độ phân giải</span>
+                                <span class="stat-value">640x480</span>
+                            </li>
+                            <li>
+                                <span class="stat-label">Ngưỡng tự tin (Conf)</span>
+                                <span class="stat-value">50%</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Telegram Config Panel -->
+                    <div class="control-group" style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 18px;">
+                        <h3 style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                            <span style="font-size: 1.2em;">🔔</span> Cảnh báo Telegram
+                        </h3>
+
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-main); margin-bottom: 12px;">
+                            <input type="checkbox" id="tg-enabled" style="accent-color: var(--primary); width: 16px; height: 16px;">
+                            <span>Bật cảnh báo tự động</span>
+                        </label>
+
+                        <div id="tg-config-fields">
+                            <label for="tg-token" style="font-size: 0.85em; color: var(--text-muted);">Bot Token</label>
+                            <div class="input-wrapper" style="margin-bottom: 10px;">
+                                <input type="password" id="tg-token" placeholder="Nhập Bot Token từ @BotFather" style="font-size: 0.85em;">
+                            </div>
+
+                            <label for="tg-chat-id" style="font-size: 0.85em; color: var(--text-muted);">Chat ID</label>
+                            <div class="input-wrapper" style="margin-bottom: 10px;">
+                                <input type="text" id="tg-chat-id" placeholder="Ví dụ: 6090629286" style="font-size: 0.85em;">
+                            </div>
+
+                            <label for="tg-cooldown" style="font-size: 0.85em; color: var(--text-muted);">Cooldown (giây giữa các lần gửi)</label>
+                            <div class="input-wrapper" style="margin-bottom: 10px;">
+                                <input type="number" id="tg-cooldown" value="30" min="5" max="300" style="font-size: 0.85em;">
+                            </div>
+
+                            <div style="display: flex; gap: 8px; margin-top: 8px;">
+                                <button id="btn-tg-save" class="btn-primary" style="flex: 1; font-size: 0.85em; padding: 8px;">
+                                    💾 Lưu cấu hình
+                                </button>
+                                <button id="btn-tg-test" class="btn-primary" style="flex: 1; font-size: 0.85em; padding: 8px; background: rgba(34,197,94,0.3); border: 1px solid rgba(34,197,94,0.4);">
+                                    🔔 Test
+                                </button>
+                            </div>
+                            <p id="tg-status-msg" style="font-size: 0.8em; margin-top: 8px; color: var(--text-muted); min-height: 1.2em;"></p>
+                        </div>
+                    </div>
+
+                    <!-- Gmail Config Panel -->
+                    <div class="control-group" style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 18px;">
+                        <h3 style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                            <span style="font-size: 1.2em;">📧</span> Cấu hình Gmail
+                        </h3>
+
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-main); margin-bottom: 12px;">
+                            <input type="checkbox" id="email-enabled" style="accent-color: var(--primary); width: 16px; height: 16px;">
+                            <span>Bật gửi cảnh báo Gmail</span>
+                        </label>
+
+                        <div id="email-config-fields">
+                            <label for="email-sender" style="font-size: 0.85em; color: var(--text-muted);">Email gửi đi (Gmail)</label>
+                            <div class="input-wrapper" style="margin-bottom: 10px;">
+                                <input type="email" id="email-sender" placeholder="Ví dụ: sender@gmail.com" style="font-size: 0.85em;">
+                            </div>
+
+                            <label for="email-password" style="font-size: 0.85em; color: var(--text-muted);">Mật khẩu ứng dụng (16 ký tự)</label>
+                            <div class="input-wrapper" style="margin-bottom: 10px;">
+                                <input type="password" id="email-password" placeholder="Nhập Mật khẩu ứng dụng" style="font-size: 0.85em;">
+                            </div>
+
+                            <label for="email-receiver" style="font-size: 0.85em; color: var(--text-muted);">Email nhận cảnh báo</label>
+                            <div class="input-wrapper" style="margin-bottom: 10px;">
+                                <input type="email" id="email-receiver" placeholder="Ví dụ: receiver@gmail.com" style="font-size: 0.85em;">
+                            </div>
+
+                            <label for="email-cooldown" style="font-size: 0.85em; color: var(--text-muted);">Cooldown (giây giữa các lần gửi)</label>
+                            <div class="input-wrapper" style="margin-bottom: 10px;">
+                                <input type="number" id="email-cooldown" value="60" min="5" max="3600" style="font-size: 0.85em;">
+                            </div>
+
+                            <div style="display: flex; gap: 8px; margin-top: 8px;">
+                                <button id="btn-email-save" class="btn-primary" style="flex: 1; font-size: 0.85em; padding: 8px;">
+                                    💾 Lưu cấu hình
+                                </button>
+                                <button id="btn-email-test" class="btn-primary" style="flex: 1; font-size: 0.85em; padding: 8px; background: rgba(34,197,94,0.3); border: 1px solid rgba(34,197,94,0.4);">
+                                    📧 Test
+                                </button>
+                            </div>
+                            <p id="email-status-msg" style="font-size: 0.8em; margin-top: 8px; color: var(--text-muted); min-height: 1.2em;"></p>
+                        </div>
+                    </div>
+
+
+                </aside>
+
+                <section class="glass-panel video-section">
+                    <div class="video-header">
+                        <h2>Luồng dữ liệu trực tiếp (Real-time Stream)</h2>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button id="btn-toggle-live-stats" class="btn-primary" style="padding: 5px 10px; font-size: 0.85em; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">
+                                <i class="fas fa-expand-arrows-alt"></i> Mở rộng Video
+                            </button>
+                            <span class="badge">LIVE</span>
+                        </div>
+                    </div>
+                    <div class="video-container">
+                        <div class="corner-brackets corner-tl"></div>
+                        <div class="corner-brackets corner-tr"></div>
+                        <div class="corner-brackets corner-bl"></div>
+                        <div class="corner-brackets corner-br"></div>
+                        
+                        <div class="video-placeholder" id="video-placeholder" style="color: #888; display: flex; align-items: center; justify-content: center; height: 100%; width: 100%; background: #111;">
+                            <p>Vui lòng nhấn nút Mở Camera để bắt đầu...</p>
+                        </div>
+                        <img src="" id="video-stream" style="display: none; background: #111; width: 100%; height: 100%; object-fit: contain;">
+                        
+                        <div class="stream-loading" id="stream-loading" style="display: none;">
+                            <div class="spinner"></div>
+                            <p>Đang kết nối camera...</p>
+                        </div>
+                    </div>
+                </section>
+
+                <aside class="glass-panel sidebar right-sidebar">
+                    <h2 class="sidebar-title">Bản Thống Kê</h2>
+                    <div id="live-results-container" style="height: 100%;">
+                        <h4 style="font-size: 1.1em; color: var(--success); margin-bottom: 15px;">Thống kê xuất hiện:</h4>
+                        <ul id="live-stats-list" class="stats-list" style="font-size: 0.95em; height: calc(100% - 40px); overflow-y: auto;">
+                            <li><span class='stat-label' style='color: #888; font-style: italic;'>Đang chờ phát hiện...</span></li>
+                        </ul>
+                    </div>
+                </aside>
+            </div>
+            
+            <!-- Tab 2: Offline Video Scan -->
+            <div id="offline-tab" class="tab-content three-columns">
+                <aside class="glass-panel sidebar">
+                    <h2 class="sidebar-title">Bảng điều khiển Quét Video</h2>
+                    
+                    <div class="control-group mt-4">
+                        <h3 style="margin-bottom: 10px; font-size: 1.1em; color: var(--primary);">Tải Video lên</h3>
+                        <label for="video-upload">Chọn File Video</label>
+                        <div class="input-wrapper" style="margin-bottom: 10px;">
+                            <input type="file" id="video-upload" accept="video/*" style="width: 100%; background: rgba(255,255,255,0.1); color: #fff; padding: 5px; border-radius: 5px;">
+                        </div>
+                        
+                        <div style="margin-top: 15px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-main);">
+                                <input type="checkbox" id="video-save-toggle" checked style="accent-color: var(--primary);"> Lưu kết quả cục bộ (trên máy)
+                            </label>
+                            
+                            <div id="video-save-options" style="margin-top: 2px; padding-left: 24px;">
+                                <label for="save-dir" style="font-size: 0.8em; color: var(--text-muted); display: block; margin-bottom: 4px;">Thư mục lưu ảnh (Local)</label>
+                                <div class="input-wrapper">
+                                    <input type="text" id="save-dir" placeholder="Ví dụ: D:\KetQua" style="font-size: 0.85em;">
+                                </div>
+                            </div>
+
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-main);">
+                                <input type="checkbox" id="video-telegram-toggle" style="accent-color: var(--primary);"> Gửi kết quả về Telegram
+                            </label>
+
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-main);">
+                                <input type="checkbox" id="video-email-toggle" style="accent-color: var(--primary);"> Gửi kết quả về Gmail
+                            </label>
+                        </div>
+                        
+                        <button id="btn-scan-video" class="btn-primary" style="margin-top: 10px;">
+                            Bắt đầu quét
+                        </button>
+                        <button id="btn-stop-scan" class="btn-primary" style="background-color: var(--danger, #e74c3c); margin-top: 10px; display: none;">
+                            <i class="fas fa-stop"></i> Dừng quét
+                        </button>
+                        
+                        <div id="scan-progress-container" style="display: none; margin-top: 15px;">
+                            <p id="scan-status-text" style="font-size: 0.9em; margin-bottom: 5px; color: #ccc;">Đang chuẩn bị...</p>
+                            <div style="width: 100%; background: rgba(255,255,255,0.2); border-radius: 5px; overflow: hidden; height: 10px;">
+                                <div id="scan-progress-bar" style="width: 0%; height: 100%; background: var(--primary); transition: width 0.3s ease;"></div>
+                            </div>
+                        </div>
+
+
+                    </div>
+                </aside>
+
+                <section class="glass-panel video-section">
+                    <div class="video-header">
+                        <h2>Luồng Video Ngoại tuyến (Offline Stream)</h2>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button id="btn-toggle-stats" class="btn-primary" style="padding: 5px 10px; font-size: 0.85em; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">
+                                <i class="fas fa-expand-arrows-alt"></i> Mở rộng Video
+                            </button>
+                            <span class="badge" style="background: var(--secondary); box-shadow: 0 0 10px rgba(139, 92, 246, 0.4);">SCANNING</span>
+                        </div>
+                    </div>
+                    <div class="video-container">
+                        <div class="corner-brackets corner-tl"></div>
+                        <div class="corner-brackets corner-tr"></div>
+                        <div class="corner-brackets corner-bl"></div>
+                        <div class="corner-brackets corner-br"></div>
+                        
+                        <img src="" id="offline-video-stream" alt="Vui lòng tải video lên và bắt đầu quét để xem..." style="background: #111;">
+                    </div>
+                </section>
+                
+                <aside class="glass-panel sidebar right-sidebar">
+                    <h2 class="sidebar-title">Bản Thống Kê</h2>
+                    <div id="scan-results-container" style="display: none; height: 100%;">
+                        <h4 style="font-size: 1.1em; color: var(--success); margin-bottom: 15px;">Thống kê xuất hiện:</h4>
+                        <ul id="scan-stats-list" class="stats-list" style="font-size: 0.95em; height: calc(100% - 40px); overflow-y: auto;">
+                        </ul>
+                    </div>
+                </aside>
+            </div>
+            
+            <!-- Tab 2.5: Image Scan -->
+            <div id="image-tab" class="tab-content three-columns">
+                <aside class="glass-panel sidebar">
+                    <h2 class="sidebar-title">Bảng điều khiển Quét Ảnh</h2>
+                    
+                    <div class="control-group mt-4">
+                        <h3 style="margin-bottom: 10px; font-size: 1.1em; color: var(--primary);">Tải Ảnh tĩnh lên</h3>
+                        <label for="image-upload">Chọn File Hình ảnh</label>
+                        <div class="input-wrapper" style="margin-bottom: 10px;">
+                            <input type="file" id="image-upload" accept="image/*" style="width: 100%; background: rgba(255,255,255,0.1); color: #fff; padding: 5px; border-radius: 5px;">
+                        </div>
+                        
+                        <label for="image-save-dir">Thư mục lưu ảnh (Local) - Tùy chọn</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="image-save-dir" placeholder="Ví dụ: D:\KetQuaAnh">
+                        </div>
+                        
+                        <button id="btn-scan-image" class="btn-primary" style="margin-top: 10px;">
+                            <i class="fas fa-search"></i> Quét Hình Ảnh
+                        </button>
+                        
+                        <div id="image-scan-status" style="display: none; margin-top: 15px; color: var(--success); font-size: 0.9em;">
+                            Đang quét ảnh...
+                        </div>
+
+
+                    </div>
+                </aside>
+
+                <section class="glass-panel video-section">
+                    <div class="video-header">
+                        <h2>Hiển thị Hình Ảnh</h2>
+                        <span class="badge" style="background: var(--info, #3498db);">IMAGE</span>
+                    </div>
+                    <div class="video-container">
+                        <div class="corner-brackets corner-tl"></div>
+                        <div class="corner-brackets corner-tr"></div>
+                        <div class="corner-brackets corner-bl"></div>
+                        <div class="corner-brackets corner-br"></div>
+                        
+                        <div id="image-placeholder" style="color: #888; display: flex; align-items: center; justify-content: center; height: 100%; width: 100%; background: #111;">
+                            <p>Vui lòng chọn ảnh và nhấn Quét để xem kết quả...</p>
+                        </div>
+                        <img src="" id="image-result-stream" alt="Ảnh kết quả" style="display: none; width: 100%; height: 100%; object-fit: contain; background: #111;">
+                    </div>
+                </section>
+                
+                <aside class="glass-panel sidebar right-sidebar">
+                    <h2 class="sidebar-title">Bản Thống Kê</h2>
+                    <div id="image-results-container" style="display: none; height: 100%;">
+                        <h4 style="font-size: 1.1em; color: var(--success); margin-bottom: 15px;">Phát hiện được:</h4>
+                        <ul id="image-stats-list" class="stats-list" style="font-size: 0.95em; height: calc(100% - 40px); overflow-y: auto;">
+                        </ul>
+                    </div>
+                </aside>
+            </div>
+            
+            <!-- Tab 3: Manage Videos -->
+            <div id="manage-tab" class="tab-content">
+                <section class="glass-panel" style="width: 100%; grid-column: 1 / -1; min-height: 500px; padding: 2rem;">
+                    <div class="video-header" style="margin-bottom: 2rem;">
+                        <h2>Danh sách Video trên Server</h2>
+                        <button class="btn-primary" id="btn-refresh-videos" style="width: auto; padding: 0.5rem 1rem; margin-top: 0;">
+                            <i class="fas fa-sync-alt"></i> Làm mới
+                        </button>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--bg-glass-border);">
+                                    <th style="padding: 1rem; color: var(--text-muted);">Tên File</th>
+                                    <th style="padding: 1rem; color: var(--text-muted);">Dung lượng</th>
+                                    <th style="padding: 1rem; color: var(--text-muted);">Ngày tải lên</th>
+                                    <th style="padding: 1rem; color: var(--text-muted); text-align: center;">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody id="video-list-body">
+                                <tr>
+                                    <td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-muted);">Đang tải dữ liệu...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            <!-- Video Player Modal -->
+            <div id="video-modal" class="modal-overlay" style="display: none;">
+                <div class="modal-content glass-panel">
+                    <div class="modal-header">
+                        <h3 id="modal-video-title">Tên video</h3>
+                        <button class="btn-close" id="btn-close-modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <video id="modal-video-player" controls style="width: 100%; max-height: 70vh; border-radius: 8px; background: #000;">
+                            Trình duyệt của bạn không hỗ trợ thẻ video.
+                        </video>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
