@@ -18,6 +18,8 @@ Demo_YOLOV11/
 │   │                               #   generate MJPEG frames. Chứa trạng thái camera.
 │   ├── telegram_notifier.py        # Module gửi cảnh báo phát hiện vật thể qua Telegram Bot
 │   │                               #   API (hỗ trợ gửi ảnh kèm bounding boxes và cooldown chống spam).
+│   ├── email_notifier.py           # Module gửi cảnh báo phát hiện vật thể qua Gmail sử dụng
+│   │                               #   SMTP_SSL (gửi thư kèm ảnh và bảng thống kê kết quả).
 │   ├── routes/                     # Thư mục chứa các Blueprint routes
 │   │   ├── __init__.py             # Package init
 │   │   ├── main_routes.py          # 2 routes: / (trang chủ), /health (health check)
@@ -28,6 +30,7 @@ Demo_YOLOV11/
 │   │   │                           #   /api/status/<task_id>, /api/check_dir
 │   │   ├── image_routes.py         # 1 route: /api/scan_image (nhận diện trên ảnh)
 │   │   ├── telegram_routes.py      # 3 routes: quản lý cấu hình và test kết nối Telegram bot
+│   │   ├── email_routes.py         # 3 routes: quản lý cấu hình và test kết nối Gmail qua SMTP
 │   │   └── manage_routes.py        # 3 routes: /api/videos, /api/videos/<filename>,
 │   │                               #   /uploads/<filename> (quản lý video đã upload)
 │   └── uploads/                    # Thư mục lưu trữ tự động các file do người dùng tải lên
@@ -132,6 +135,7 @@ graph TD
     A --> IR["routes/image_routes.py"]
     A --> MGR["routes/manage_routes.py"]
     A --> TR["routes/telegram_routes.py"]
+    A --> ER["routes/email_routes.py"]
 
     CAM --> C
     CR --> C
@@ -140,12 +144,19 @@ graph TD
     IR --> C
     MGR --> C
     TR --> C
+    ER --> C
     
     %% Telegram Alerts dependencies
     CAM -.-> TN["telegram_notifier.py"]
     VR -.-> TN
     TR --> TN
     TN --> C
+
+    %% Email Alerts dependencies
+    CAM -.-> EN["email_notifier.py"]
+    VR -.-> EN
+    ER --> EN
+    EN --> C
 ```
 
 ### Giải thích sơ đồ
@@ -156,7 +167,7 @@ graph TD
 |---------|----------|
 | `app.py` → `config.py` | Import logger, cấu hình chung |
 | `app.py` → `camera.py` | Import để đăng ký atexit handler (giải phóng camera khi tắt) |
-| `app.py` → 6 file `routes/*` | Import 6 Blueprint để đăng ký vào Flask app |
+| `app.py` → 7 file `routes/*` | Import 7 Blueprint để đăng ký vào Flask app |
 
 **Tầng 2 — Các file routes và modules logic (giữa):**
 
@@ -170,8 +181,11 @@ graph TD
 | `telegram_routes.py` → `config.py` | Dùng logger |
 | `telegram_routes.py` → `telegram_notifier.py` | Lưu cấu hình của Telegram Bot, thực hiện test gửi thử |
 | `telegram_notifier.py` → `config.py` | Sử dụng logger |
-| `camera.py` → `telegram_notifier.py` | Tự động gọi gửi ảnh cảnh báo khi camera phát hiện vật thể |
-| `video_routes.py` → `telegram_notifier.py` | Tự động gọi gửi ảnh thống kê khi quét video hoàn thành |
+| `email_routes.py` → `config.py` | Dùng logger |
+| `email_routes.py` → `email_notifier.py` | Lưu cấu hình Gmail, thực hiện test gửi thử |
+| `email_notifier.py` → `config.py` | Sử dụng logger |
+| `camera.py` → `telegram_notifier.py` & `email_notifier.py` | Tự động gọi gửi ảnh cảnh báo khi camera phát hiện vật thể |
+| `video_routes.py` → `telegram_notifier.py` & `email_notifier.py` | Tự động gọi gửi ảnh thống kê khi quét video hoàn thành |
 | `main_routes.py` | Không phụ thuộc file nào trong dự án (chỉ dùng Flask) |
 
 **Tầng 3 — `config.py` (nền tảng, dưới cùng):**
@@ -233,4 +247,24 @@ Hệ thống hỗ trợ gửi thông báo kèm ảnh chụp nhận diện (chứ
 ### Cơ chế hoạt động:
 - **Tùy chọn đa chế độ:** Bạn có thể tích chọn lưu ảnh cục bộ trên máy, gửi cảnh báo Telegram, hoặc **chọn cả hai cùng lúc** thông qua hai checkbox độc lập trên giao diện.
 - **Tính năng Cooldown (Chống Spam):** Khoảng cách thời gian tối thiểu giữa các lần gửi cảnh báo (mặc định là `30` giây, có thể tùy chỉnh trên giao diện) để tránh việc bot gửi tin nhắn liên tục khi vật thể đứng im trước camera.
+
+## Tính Năng Cảnh Báo Email (Email Alerts)
+
+Hệ thống hỗ trợ gửi email cảnh báo kèm ảnh chụp nhận diện (chứa bounding box) và bảng thống kê số lượng vật thể trực tiếp qua hòm thư Gmail của bạn thông qua giao thức SMTP SSL.
+
+### Hướng dẫn thiết lập Gmail gửi cảnh báo:
+1. Chuẩn bị tài khoản Gmail người gửi. Để bảo mật, bạn cần tạo **Mật khẩu ứng dụng (App Password)** của Google (thay vì dùng mật khẩu tài khoản chính):
+   - Vào cài đặt tài khoản Google của bạn -> Bảo mật (Security).
+   - Bật **Xác minh 2 bước (2-Step Verification)** (nếu chưa bật).
+   - Chọn mục **Mật khẩu ứng dụng (App Passwords)** ở dưới cùng, tạo một ứng dụng mới (ví dụ đặt tên là `YOLO Vision`).
+   - Copy chuỗi mật khẩu gồm 16 ký tự được hiển thị.
+2. Chạy ứng dụng web, tại tab **Camera Trực Tiếp**:
+   - Nhập **Email người gửi (Sender Email)**, **Mật khẩu ứng dụng** vừa tạo (16 ký tự viết liền không dấu cách), và **Email người nhận (Receiver Email)** vào panel **Cảnh báo Email** ở sidebar.
+   - Nhấn **Lưu cấu hình**.
+   - Nhấn nút **Test** để gửi email thử nghiệm xác nhận kết nối SMTP hoạt động thành công.
+
+### Cơ chế hoạt động:
+- **Tùy chọn gửi email:** Bạn có thể bật/tắt tính năng gửi cảnh báo Email thông qua checkbox tương ứng trên giao diện.
+- **Tính năng Cooldown (Chống Spam):** Tương tự như Telegram, bạn có thể thiết lập thời gian giãn cách tối thiểu giữa các lần gửi email (mặc định là `60` giây) để tránh spam hòm thư.
+- **Số lượng vật thể tối thiểu:** Cho phép cấu hình số lượng vật thể tối thiểu được phát hiện trước khi kích hoạt gửi email cảnh báo.
 
