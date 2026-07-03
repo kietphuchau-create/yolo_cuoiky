@@ -458,7 +458,6 @@ body {
 }
 
 .video-container {
-    flex: 1;
     position: relative;
     background: #000;
     border-radius: 16px;
@@ -467,7 +466,9 @@ body {
     justify-content: center;
     align-items: center;
     border: 1px solid var(--bg-glass-border);
-    min-height: 480px;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    margin: 0 auto;
 }
 
 #video-stream, #offline-video-stream {
