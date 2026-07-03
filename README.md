@@ -268,3 +268,21 @@ Hệ thống hỗ trợ gửi email cảnh báo kèm ảnh chụp nhận diện 
 - **Tính năng Cooldown (Chống Spam):** Tương tự như Telegram, bạn có thể thiết lập thời gian giãn cách tối thiểu giữa các lần gửi email (mặc định là `60` giây) để tránh spam hòm thư.
 - **Số lượng vật thể tối thiểu:** Cho phép cấu hình số lượng vật thể tối thiểu được phát hiện trước khi kích hoạt gửi email cảnh báo.
 
+## Xuất File Thống Kê Số Lượng (`thong_ke_so_luong.txt`)
+
+Khi hệ thống quét video hoặc chạy camera trực tiếp và có tùy chọn lưu kết quả, một file nhật ký `thong_ke_so_luong.txt` sẽ được tự động tạo trong thư mục lưu trữ (mặc định trong `backend/uploads/`).
+
+### Nội dung file:
+File ghi lại mốc thời gian (mốc giây trong video hoặc thời gian chạy thực tế của camera) kèm theo danh sách số lượng từng loại vật thể được phát hiện.
+Ví dụ:
+```text
+[00:00:05 - 5.20s] Frame 156: {'blue pen': 1, 'card holder': 1}
+```
+
+### Cơ chế Tối ưu hóa Ghi File (Log Buffering):
+Để tránh việc ghi đĩa liên tục gây quá tải Disk I/O và làm giảm chỉ số FPS (khung hình trên giây) của mô hình nhận diện, hệ thống áp dụng cơ chế bộ đệm (buffering) trong bộ nhớ RAM:
+- **Quét Video**: Các dòng nhật ký sẽ được tích lũy vào bộ nhớ RAM và chỉ ghi xuống đĩa theo từng lô **100 dòng** một lần, hoặc xả (flush) toàn bộ phần còn lại khi video quét xong hoặc bị dừng sớm.
+- **Camera trực tiếp**: Các dòng nhật ký được tích lũy và ghi xuống đĩa theo lô **30 dòng** một lần, hoặc ghi nốt khi dừng camera.
+- **Kết quả**: Việc này giúp giảm số lần truy xuất ổ đĩa vật lý tới 95% - 99%, giúp tối ưu hóa hiệu năng và tốc độ xử lý của YOLOv11.
+
+
